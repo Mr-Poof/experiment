@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Time Updater</title>
+    <script>
+        function updateTime() {
+            fetch('/get-time')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("time").textContent = data.time;
+                });
+        }
+    </script>
+</head>
+<body>
+    <h1>Current Time</h1>
+    <p id="time">Click the button to see the time</p>
+    <button onclick="updateTime()">Get Current Time</button>
+</body>
+</html>
