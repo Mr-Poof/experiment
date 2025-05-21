@@ -2,20 +2,102 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Time Updater</title>
+
+    <title>Suburb Finder</title>
+
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+</head>
+<body>
+    <h1>Current Time</h1>
+    <form>
+        <input id = "suburb-name" type = "text">
+    </form>
+    <p id = "display-suburb">Click submit to get the population</p>
+    <p id="population"></p>
+    <button onclick="getPop()">Get My Suburb</button>
+    
+    <style>
+        #map {position: relative; width: 500px; height: 300px}
+    </style>
+
+    <div id = "map"></div>
+
+
     <script>
-        function updateTime() {
-            fetch('/get-time')
+        var map = L.map('map').setView([-33.87,151.21], 12);
+
+        //determines map apperance 
+        L.tileLayer('https://api.maptiler.com/maps/basic-v2/{z}/{x}/{y}.png?key=eS1UtFAz58YgKMtFgO5T', {atttribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'}).addTo(map);
+
+        lat = 51.5
+        long = 0
+        var marker = L.marker([lat, long]).addTo(map)
+        var polygon = null
+
+        //fill out ALL suburbs
+        //no function, do this automatically
+        fetch('{{ url_for ("get_all")}}')
+            .then(response => response.json())
+            .then(data =>{
+                for (const suburb of data){
+                    latLngs = suburb[3]
+
+                    var polygon = L.polygon(
+                        latLngs,
+                        {color: suburb[5]}
+                    ).addTo(map);
+
+                    polygon.on('click', function(e){
+                        document.getElementById("population").textContent = suburb[0]
+                        document.getElementById("display-suburb").textContent = suburb[1]
+                        console.log(suburb[4])
+                    })
+                }
+            })
+
+
+
+        //get population of an individual suburb
+        function getPop() {
+            suburbName = document.getElementById("suburb-name").value
+
+            //console.log(suburbName.value)
+            /*fetch('/get-time')
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById("time").textContent = data.time;
                 });
+            */
+            fetch('{{ url_for ("get_population", suburb = suburbName)}}' + suburbName)
+                .then(response => response.json())
+                .then(data => {
+
+                    document.getElementById("population").textContent = data.population
+                    //seperate coords into lat and long
+                    if (data.coords != "0"){
+                        data.coords = data.coords.split(",")
+                        var newLatLng = new L.LatLng(parseFloat(data.coords[0]), parseFloat(data.coords[1]));
+                        marker.setLatLng(newLatLng); 
+                        map.panTo(newLatLng);   
+
+                        latLngs = data.shape
+
+
+                        var polygon = L.polygon(
+                            latLngs,
+                            {color: data.color}
+                        ).addTo(map);
+
+                        map.fitBounds(polygon.getBounds());
+
+                        console.log(data.color)
+                    }
+
+                });
         }
     </script>
-</head>
-<body>
-    <h1>Current Time</h1>
-    <p id="time">Click the button to see the time</p>
-    <button onclick="updateTime()">Get Current Time</button>
 </body>
 </html>
